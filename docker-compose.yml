@@ -1,0 +1,66 @@
+version: "3.9"
+   
+services:
+    centrifugo:
+        container_name: centrifugo
+        image: centrifugo/centrifugo:v3
+        environment:
+            - CENTRIFUGO_ENGINE=redis
+            - CENTRIFUGO_REDIS_SENTINEL_ADDRESS=redis-sentinel:26379
+            - CENTRIFUGO_REDIS_SENTINEL_MASTER_NAME=redis-master
+            - CENTRIFUGO_REDIS_PASSWORD=passwd
+            - CENTRIFUGO_ADMIN_PASSWORD=bc874617-c562-410e-8a4a-50375bca1e5b
+            - CENTRIFUGO_ADMIN_SECRET=74035579-654e-4f9f-81d6-3582d10f7923
+            - CENTRIFUGO_API_KEY=1c975adb-e03d-4ebe-9bfb-3d219670df39
+            - CENTRIFUGO_TOKEN_HMAC_SECRET_KEY=3225ca5f-5104-44c5-816e-63d650fdc0d3
+        command: centrifugo --admin
+        ports:
+            - 8000:8000
+        ulimits:
+            nofile:
+                soft: 65535
+                hard: 65535
+        depends_on:
+            - redis-master
+            - redis-slave
+            - redis-sentinel
+        deploy:
+            replicas: 2
+            
+    redis-master:
+        image: 'bitnami/redis'
+        restart: always
+        sysctls:
+            net.core.somaxconn: 65365
+        environment:
+            - REDIS_REPLICATION_MODE=master
+            - REDIS_PASSWORD=passwd
+
+    redis-replica:
+        image: 'bitnami/redis'
+        restart: always
+        sysctls:
+            net.core.somaxconn: 65365
+        depends_on:
+            - redis-master
+        environment:
+            - REDIS_REPLICATION_MODE=slave
+            - REDIS_MASTER_HOST=redis-master
+            - REDIS_MASTER_PASSWORD=passwd
+            - REDIS_PASSWORD=passwd
+        deploy:
+            replicas: 2
+
+    redis-sentinel:
+        image: 'bitnami/redis-sentinel'
+        restart: always
+        sysctls:
+            net.core.somaxconn: 65365
+        depends_on:
+            - redis-master
+            - redis-slave
+        environment:
+            - REDIS_MASTER_HOST=redis-master
+            - REDIS_MASTER_PASSWORD=passwd
+        deploy:
+            replicas: 3
