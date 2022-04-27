@@ -2,12 +2,11 @@ version: "3.9"
    
 services:
     centrifugo:
-        container_name: centrifugo
         image: centrifugo/centrifugo:v3
         environment:
             - CENTRIFUGO_ENGINE=redis
-            - CENTRIFUGO_REDIS_SENTINEL_ADDRESS=redis-sentinel:26379
-            - CENTRIFUGO_REDIS_SENTINEL_MASTER_NAME=redis-master
+            - CENTRIFUGO_REDIS_SENTINEL_ADDRESS=tasks.redis-sentinel:26379
+            - CENTRIFUGO_REDIS_SENTINEL_MASTER_NAME=masterset
             - CENTRIFUGO_REDIS_PASSWORD=passwd
             - CENTRIFUGO_ADMIN_PASSWORD=bc874617-c562-410e-8a4a-50375bca1e5b
             - CENTRIFUGO_ADMIN_SECRET=74035579-654e-4f9f-81d6-3582d10f7923
@@ -24,6 +23,8 @@ services:
             - redis-master
             - redis-slave
             - redis-sentinel
+        networks:
+            - net
         deploy:
             replicas: 2
             
@@ -32,9 +33,17 @@ services:
         restart: always
         sysctls:
             net.core.somaxconn: 65365
+        networks:
+            - net
         environment:
             - REDIS_REPLICATION_MODE=master
             - REDIS_PASSWORD=passwd
+        deploy:
+            mode: replicated
+            replicas: 1
+            placement:
+                constraints:
+                    - node.role == manager
 
     redis-replica:
         image: 'bitnami/redis'
@@ -43,12 +52,16 @@ services:
             net.core.somaxconn: 65365
         depends_on:
             - redis-master
+        networks:
+            - net
         environment:
             - REDIS_REPLICATION_MODE=slave
-            - REDIS_MASTER_HOST=redis-master
+            - REDIS_MASTER_HOST=tasks.redis-master
+            - REDIS_MASTER_PORT_NUMBER=6379
             - REDIS_MASTER_PASSWORD=passwd
             - REDIS_PASSWORD=passwd
         deploy:
+            mode: replicated
             replicas: 2
 
     redis-sentinel:
@@ -59,8 +72,18 @@ services:
         depends_on:
             - redis-master
             - redis-slave
+        networks:
+            - net
         environment:
-            - REDIS_MASTER_HOST=redis-master
+            - REDIS_MASTER_HOST=tasks.redis-master
+            - REDIS_MASTER_SET=masterset
             - REDIS_MASTER_PASSWORD=passwd
+            - REDIS_PASSWORD=passwd
         deploy:
+            mode: replicated
             replicas: 3
+
+networks:
+  net:
+    driver: overlay
+    attachable: true
