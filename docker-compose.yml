@@ -1,13 +1,52 @@
 version: "3.9"
-   
+
 services:
+    redismaster:
+        image: 'bitnami/redis'
+        restart: always
+        sysctls:
+            net.core.somaxconn: 65365
+        environment:
+            - REDIS_REPLICATION_MODE=master
+            - REDIS_PASSWORD=paswdd
+
+    redisslave:
+        image: 'bitnami/redis'
+        restart: always
+        sysctls:
+            net.core.somaxconn: 65365
+        depends_on:
+            - redismaster
+        environment:
+            - REDIS_REPLICATION_MODE=slave
+            - REDIS_MASTER_HOST=tasks.redismaster
+            - REDIS_MASTER_PASSWORD=paswdd
+            - REDIS_PASSWORD=paswdd
+        deploy:
+            replicas: 2
+
+    redissentinel:
+        image: 'bitnami/redis-sentinel'
+        restart: always
+        sysctls:
+            net.core.somaxconn: 65365
+        depends_on:
+            - redismaster
+            - redisslave
+        environment:
+            - REDIS_MASTER_HOST=tasks.redismaster
+            - REDIS_MASTER_PASSWORD=paswdd
+            - REDIS_PASSWORD=paswdd
+        deploy:
+            replicas: 3
+
     centrifugo:
-        image: centrifugo/centrifugo:v3
+        image: centrifugo/centrifugo:v3.2
         environment:
             - CENTRIFUGO_ENGINE=redis
-            - CENTRIFUGO_REDIS_SENTINEL_ADDRESS=tasks.redis-sentinel:26379
-            - CENTRIFUGO_REDIS_SENTINEL_MASTER_NAME=masterset
-            - CENTRIFUGO_REDIS_PASSWORD=passwd
+            - CENTRIFUGO_REDIS_SENTINEL_ADDRESS=tasks.redissentinel:26379
+            - CENTRIFUGO_REDIS_SENTINEL_MASTER_NAME=mymaster
+            - CENTRIFUGO_REDIS_PASSWORD=paswdd
             - CENTRIFUGO_ADMIN_PASSWORD=bc874617-c562-410e-8a4a-50375bca1e5b
             - CENTRIFUGO_ADMIN_SECRET=74035579-654e-4f9f-81d6-3582d10f7923
             - CENTRIFUGO_API_KEY=1c975adb-e03d-4ebe-9bfb-3d219670df39
@@ -20,70 +59,8 @@ services:
                 soft: 65535
                 hard: 65535
         depends_on:
-            - redis-master
-            - redis-slave
-            - redis-sentinel
-        networks:
-            - net
+            - redismaster
+            - redisslave
+            - redissentinel
         deploy:
-            replicas: 2
-            
-    redis-master:
-        image: 'bitnami/redis'
-        restart: always
-        sysctls:
-            net.core.somaxconn: 65365
-        networks:
-            - net
-        environment:
-            - REDIS_REPLICATION_MODE=master
-            - REDIS_PASSWORD=passwd
-        deploy:
-            mode: replicated
-            replicas: 1
-            placement:
-                constraints:
-                    - node.role == manager
-
-    redis-replica:
-        image: 'bitnami/redis'
-        restart: always
-        sysctls:
-            net.core.somaxconn: 65365
-        depends_on:
-            - redis-master
-        networks:
-            - net
-        environment:
-            - REDIS_REPLICATION_MODE=slave
-            - REDIS_MASTER_HOST=tasks.redis-master
-            - REDIS_MASTER_PORT_NUMBER=6379
-            - REDIS_MASTER_PASSWORD=passwd
-            - REDIS_PASSWORD=passwd
-        deploy:
-            mode: replicated
-            replicas: 2
-
-    redis-sentinel:
-        image: 'bitnami/redis-sentinel'
-        restart: always
-        sysctls:
-            net.core.somaxconn: 65365
-        depends_on:
-            - redis-master
-            - redis-slave
-        networks:
-            - net
-        environment:
-            - REDIS_MASTER_HOST=tasks.redis-master
-            - REDIS_MASTER_SET=masterset
-            - REDIS_MASTER_PASSWORD=passwd
-            - REDIS_PASSWORD=passwd
-        deploy:
-            mode: replicated
-            replicas: 3
-
-networks:
-  net:
-    driver: overlay
-    attachable: true
+            replicas: 6
