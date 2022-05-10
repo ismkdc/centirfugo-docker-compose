@@ -1,6 +1,6 @@
 version: "3.9"
-
-services:
+   
+services: 
     redismaster:
         image: 'bitnami/redis'
         restart: always
@@ -8,7 +8,7 @@ services:
             net.core.somaxconn: 65365
         environment:
             - REDIS_REPLICATION_MODE=master
-            - REDIS_PASSWORD=paswdd
+            - REDIS_PASSWORD=123
 
     redisslave:
         image: 'bitnami/redis'
@@ -20,8 +20,8 @@ services:
         environment:
             - REDIS_REPLICATION_MODE=slave
             - REDIS_MASTER_HOST=tasks.redismaster
-            - REDIS_MASTER_PASSWORD=paswdd
-            - REDIS_PASSWORD=paswdd
+            - REDIS_MASTER_PASSWORD=123
+            - REDIS_PASSWORD=123
         deploy:
             replicas: 2
 
@@ -35,22 +35,23 @@ services:
             - redisslave
         environment:
             - REDIS_MASTER_HOST=tasks.redismaster
-            - REDIS_MASTER_PASSWORD=paswdd
-            - REDIS_PASSWORD=paswdd
+            - REDIS_MASTER_PASSWORD=123
+            - REDIS_PASSWORD=123
         deploy:
             replicas: 3
-
+    
     centrifugo:
         image: centrifugo/centrifugo:v3.2
         environment:
             - CENTRIFUGO_ENGINE=redis
             - CENTRIFUGO_REDIS_SENTINEL_ADDRESS=tasks.redissentinel:26379
             - CENTRIFUGO_REDIS_SENTINEL_MASTER_NAME=mymaster
-            - CENTRIFUGO_REDIS_PASSWORD=paswdd
-            - CENTRIFUGO_ADMIN_PASSWORD=123
-            - CENTRIFUGO_ADMIN_SECRET=321
-            - CENTRIFUGO_API_KEY=22
-            - CENTRIFUGO_TOKEN_HMAC_SECRET_KEY=33
+            - CENTRIFUGO_REDIS_PASSWORD=123
+            - CENTRIFUGO_ADMIN_PASSWORD=321
+            - CENTRIFUGO_ADMIN_SECRET=11
+            - CENTRIFUGO_API_KEY=33
+            - CENTRIFUGO_TOKEN_HMAC_SECRET_KEY=222
+            - CENTRIFUGO_PROMETHEUS=true
         command: centrifugo --admin
         ports:
             - 8000:8000
@@ -64,3 +65,16 @@ services:
             - redissentinel
         deploy:
             replicas: 6
+            
+    prometheus:
+        image: ismkdc/centrifugo-prometheus
+        depends_on:
+            - centrifugo
+    
+    grafana:
+        image: grafana/grafana
+        environment:
+            - GF_SECURITY_ADMIN_USER=gfadmin
+            - GF_SECURITY_ADMIN_PASSWORD=gfpass
+        ports:
+            - 3000:3000
