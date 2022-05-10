@@ -47,10 +47,10 @@ services:
             - CENTRIFUGO_REDIS_SENTINEL_ADDRESS=tasks.redissentinel:26379
             - CENTRIFUGO_REDIS_SENTINEL_MASTER_NAME=mymaster
             - CENTRIFUGO_REDIS_PASSWORD=paswdd
-            - CENTRIFUGO_ADMIN_PASSWORD=bc874617-c562-410e-8a4a-50375bca1e5b
-            - CENTRIFUGO_ADMIN_SECRET=74035579-654e-4f9f-81d6-3582d10f7923
-            - CENTRIFUGO_API_KEY=1c975adb-e03d-4ebe-9bfb-3d219670df39
-            - CENTRIFUGO_TOKEN_HMAC_SECRET_KEY=3225ca5f-5104-44c5-816e-63d650fdc0d3
+            - CENTRIFUGO_ADMIN_PASSWORD=123
+            - CENTRIFUGO_ADMIN_SECRET=321
+            - CENTRIFUGO_API_KEY=22
+            - CENTRIFUGO_TOKEN_HMAC_SECRET_KEY=33
         command: centrifugo --admin
         ports:
             - 8000:8000
