@@ -57,6 +57,7 @@ services:
             - CENTRIFUGO_TOKEN_HMAC_SECRET_KEY=222
             - CENTRIFUGO_PROMETHEUS=true
             - CENTRIFUGO_ALLOWED_ORIGINS=*
+            - CENTRIFUGO_USAGE_STATS_DISABLE=true
         command: centrifugo --admin
         ports:
             - 8000:8000
