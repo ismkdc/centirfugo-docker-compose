@@ -58,6 +58,7 @@ services:
             - CENTRIFUGO_PROMETHEUS=true
             - CENTRIFUGO_ALLOWED_ORIGINS=*
             - CENTRIFUGO_USAGE_STATS_DISABLE=true
+            - CENTRIFUGO_CLIENT_INSECURE=true
         command: sh -c "sleep 15 && centrifugo --admin"
         ports:
             - 8000:8000
